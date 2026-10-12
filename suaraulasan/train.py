@@ -14,6 +14,11 @@ from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
+try:
+    import mlflow
+except ImportError:  # ponytail: mlflow cuma di grup "bert", biar CI/Docker tetap ringan
+    mlflow = None
+
 LABELS = ["negatif", "positif"]
 
 
@@ -42,9 +47,14 @@ def validate(rows: list[tuple[str, int]], min_rows: int = 200, min_share: float 
         raise ValueError(f"kelas timpang parah: {share:.1%} positif")
 
 
-def train(rows: list[tuple[str, int]], seed: int = 42):
+def split(rows: list[tuple[str, int]], seed: int = 42):
+    """Split tetap (seed sama) supaya semua model diuji di test set yang identik."""
     X, y = zip(*rows)
-    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, random_state=seed)
+    return train_test_split(X, y, test_size=0.2, stratify=y, random_state=seed)
+
+
+def train(rows: list[tuple[str, int]], seed: int = 42):
+    X_tr, X_te, y_tr, y_te = split(rows, seed)
     model = make_pipeline(
         TfidfVectorizer(ngram_range=(1, 2), min_df=2, sublinear_tf=True),
         LogisticRegression(class_weight="balanced", max_iter=1000),
@@ -71,6 +81,10 @@ if __name__ == "__main__":
     joblib.dump(model, out / "model.joblib")
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
     print(metrics)
+    if mlflow:
+        with mlflow.start_run(run_name="tfidf-logreg"):
+            mlflow.log_params({"model": "tfidf-logreg", "data": a.data})
+            mlflow.log_metrics(metrics)
 
     if metrics["f1_macro"] < a.min_f1:
         sys.exit(f"GAGAL gate: f1_macro {metrics['f1_macro']} < {a.min_f1}")
