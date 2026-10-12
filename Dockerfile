@@ -7,4 +7,5 @@ COPY suaraulasan/ suaraulasan/
 # model dihasilkan `python -m suaraulasan.train` (di CI atau lokal) sebelum docker build
 COPY models/model.joblib models/model.joblib
 EXPOSE 8000
-CMD ["/app/.venv/bin/uvicorn", "suaraulasan.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render & host lain kasih port lewat $PORT; lokal default 8000
+CMD ["sh", "-c", "exec /app/.venv/bin/uvicorn suaraulasan.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
