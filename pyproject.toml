@@ -1,0 +1,21 @@
+[project]
+name = "suaraulasan"
+version = "0.1.0"
+description = "Analisis sentimen ulasan aplikasi Indonesia dari Play Store"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "scikit-learn",
+    "joblib",
+    "google-play-scraper",
+]
+
+[dependency-groups]
+dev = ["pytest", "httpx", "ruff"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
