@@ -3,6 +3,7 @@ from functools import cache
 
 import joblib
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from suaraulasan.train import LABELS
@@ -17,6 +18,11 @@ def model():
 
 class Review(BaseModel):
     text: str = Field(min_length=1, max_length=5000)
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse("/docs")  # halaman demo = Swagger UI
 
 
 @app.get("/health")
