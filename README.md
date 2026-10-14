@@ -22,9 +22,17 @@ Test set identik (572 ulasan, split seed 42); semua run tercatat di MLflow.
 
 **Temuan:** IndoBERT tidak lebih baik. Dari 16 ulasan yang salah ditebak *kedua* model, hampir semuanya
 komplain yang diberi bintang 4–5 ("gojek error gini pas pilih metode pembayaran", "membuka tabungan
-emas gagal terus"). Model menebak benar, labelnya yang salah. Plafon akurasi saat ini ada di
-**kualitas label dari bintang**, bukan di model. Langkah berikutnya: label yang lebih baik, bukan
-model yang lebih besar.
+emas gagal terus"): model menebak benar, labelnya yang salah.
+
+**Gold set (label manual, 300 ulasan dari test split, 25 di-skip, `data/gold.csv`):**
+
+| | vs gold |
+|---|---|
+| Label bintang benar | 96.4% (F1 0.963) |
+| TF-IDF + LogReg | F1 0.971 |
+
+Noise label bintang ternyata hanya ~3.6%, dan baseline sudah lebih akurat dari label yang dipakai
+melatihnya. Relabel penuh dengan LLM paling banyak menutup selisih kecil itu.
 
 ## Jalankan
 
