@@ -52,6 +52,23 @@ banyak pengguna memberi bintang 5 untuk ulasan "bagus tapi ...". Model belajar d
 label yang tidak sesuai definisi kita (keluhan = negatif). Model lebih besar tidak menolong; yang
 menolong adalah label yang mengikuti definisi.
 
+**Relabel terarah dengan LLM (Qwen3 4B lokal via Ollama, `relabel.py`):** hanya ulasan bintang 4–5
+yang berisi kata keluhan (1.538 ulasan). LLM diuji dulu di gold: prompt pertama F1 0.741 (hampir semua
+dicap negatif, termasuk "keren"), prompt perbaikan **0.974** vs label bintang 0.963. Prompt diperbaiki
+setelah melihat kesalahan di gold, jadi angka itu sedikit optimis. Hasil: 1.304 jadi negatif, 151 tetap
+positif, 83 skip (tetap label bintang).
+
+| Kalimat | Label bintang | + label LLM |
+|---|---|---|
+| bagus tapi sering lemot | positif 63% | **negatif 98%** |
+| lumayan lah tapi mahal | positif 76% | **negatif 96%** |
+| aplikasinya bagus, cuma kadang error | positif 90% | **negatif 93%** |
+| mantap, sangat membantu | positif 100% | positif 100% |
+
+Di gold set: salah 8 vs 9 dari 275, kasus "bagus tapi" benar 6/9 vs 7/9. **Gold 275 ulasan terlalu kecil
+untuk membedakan keduanya**; kasus sulitnya cuma 9. Model baru dipakai karena perilakunya sesuai definisi
+label. Langkah berikut: perbesar gold khusus kasus sulit.
+
 **Catatan data:** 30.013 ulasan, ID unik semua. 7.092 teks kembar adalah ulasan pendek dari pengguna
 berbeda ("mantap" 920×, "bagus" 864×), bukan duplikat scrape. Rentang waktu tidak sama per aplikasi
 (Gojek Jun–Okt, MyTelkomsel Sep–Okt 2026) karena diambil N ulasan terbaru.
