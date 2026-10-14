@@ -59,8 +59,10 @@
     const r = predict(model, text);
     const color = r.label === "positif" ? "var(--pos)" : "var(--neg)";
     const conf = r.label === "positif" ? r.prob : 1 - r.prob;
-    $("label").textContent = `${r.label} · ${(conf * 100).toFixed(0)}%`;
-    $("label").style.color = color;
+    // ponytail: ambang 60% ditebak, bukan dikalibrasi; tanpa kata dikenal skornya cuma bias model
+    const unsure = !r.terms.length || conf < 0.6;
+    $("label").textContent = !r.terms.length ? "tidak dikenal" : unsure ? `ragu, condong ${r.label} · ${(conf * 100).toFixed(0)}%` : `${r.label} · ${(conf * 100).toFixed(0)}%`;
+    $("label").style.color = unsure ? "var(--muted)" : color;
     $("fill").style.cssText = `width:${conf * 100}%;background:${color}`;
     const top = r.terms.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
     $("terms").replaceChildren(...top.map(([g, c]) => {
@@ -69,7 +71,7 @@
       s.style.color = c > 0 ? "var(--pos)" : "var(--neg)";
       return s;
     }));
-    if (!top.length) $("terms").textContent = "(tidak ada kata yang dikenal model)";
+    if (!top.length) $("terms").textContent = "(tidak ada kata yang dikenal model; coba kalimat yang lebih panjang)";
   }
   $("text").addEventListener("input", run);
   document.querySelectorAll(".ex button").forEach((b) => b.onclick = () => { $("text").value = b.textContent; run(); });
