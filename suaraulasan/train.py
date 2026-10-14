@@ -27,6 +27,14 @@ def label(score: int) -> int | None:
     return None if score == 3 else int(score >= 4)
 
 
+def llm_labels(path: str = "data/llm_labels.csv") -> dict[str, int]:
+    """Label LLM (relabel.py) untuk ulasan bintang 4-5 berisi keluhan; menimpa label bintang."""
+    if not Path(path).exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {r["content"]: int(r["label"] == "positif") for r in csv.DictReader(f) if r["label"] != "skip"}
+
+
 def load(path: str) -> list[tuple[str, int]]:
     if path.endswith(".csv"):
         with open(path, encoding="utf-8") as f:
@@ -35,7 +43,9 @@ def load(path: str) -> list[tuple[str, int]]:
         con = sqlite3.connect(path)
         raw = con.execute("SELECT content, score FROM reviews").fetchall()
         con.close()
-    return [(text.strip(), label(s)) for text, s in raw if text and label(s) is not None]
+    over = llm_labels()
+    rows = [(text.strip(), label(s)) for text, s in raw if text and label(s) is not None]
+    return [(t, over.get(t, y)) for t, y in rows]
 
 
 def validate(rows: list[tuple[str, int]], min_rows: int = 200, min_share: float = 0.05) -> None:

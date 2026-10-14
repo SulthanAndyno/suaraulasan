@@ -32,3 +32,12 @@ def test_train_and_api(tmp_path, monkeypatch):
     r = c.post("/predict", json={"text": "aplikasinya mantap, sangat membantu"})
     assert r.status_code == 200 and r.json()["label"] in train.LABELS
     assert c.post("/predict", json={"text": ""}).status_code == 422
+
+
+def test_llm_labels_override(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    (tmp_path / "d.csv").write_text("content,score\nbagus tapi lemot,5\nmantap,5\n")
+    assert train.load("d.csv") == [("bagus tapi lemot", 1), ("mantap", 1)]
+    (tmp_path / "data/llm_labels.csv").write_text("content,label\nbagus tapi lemot,negatif\nmantap,skip\n")
+    assert train.load("d.csv") == [("bagus tapi lemot", 0), ("mantap", 1)]
