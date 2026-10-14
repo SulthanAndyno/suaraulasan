@@ -34,12 +34,27 @@ emas gagal terus"): model menebak benar, labelnya yang salah.
 | TF-IDF kata + LogReg | 2.858 ulasan | 0.963 |
 | TF-IDF kata + LogReg | 28.650 ulasan | 0.963 |
 | TF-IDF kata **+ karakter** + LogReg | 28.650 ulasan | **0.971** |
+| IndoBERT-base, 3 epoch (7 menit di RTX 3050) | 28.650 ulasan | 0.963 |
 
 Ulasan gold dibuang dari data latih (termasuk duplikat teks pendek seperti "baik"), jadi angka di
 atas jujur. Noise label bintang hanya ~3.6%; relabel penuh dengan LLM paling banyak menutup selisih kecil itu.
 
 **Data 10× saja tidak menaikkan F1.** Yang menolong adalah n-gram karakter (`char_wb` 2–5): tahan typo
 dan singkatan ("anjg", "gblk", "bgst lemot" → negatif).
+
+**IndoBERT vs TF-IDF (data 30 ribu):** di test split IndoBERT sedikit unggul (0.931 vs 0.923), di gold
+seri (selisih ~2 ulasan dari 275). IndoBERT jauh lebih paham kata kasar tanpa konteks ("goblok",
+"kampret lah" → negatif 98–99%, TF-IDF ragu), tapi 20× lebih lambat (0.59 vs 0.03 ms/ulasan, GPU) dan
+476 MB vs 2,2 MB. Demo dan API tetap memakai TF-IDF.
+
+Kedua model menilai "bagus tapi sering lemot" **positif** (IndoBERT malah 100%). Penyebabnya label:
+banyak pengguna memberi bintang 5 untuk ulasan "bagus tapi ...". Model belajar dengan benar dari
+label yang tidak sesuai definisi kita (keluhan = negatif). Model lebih besar tidak menolong; yang
+menolong adalah label yang mengikuti definisi.
+
+**Catatan data:** 30.013 ulasan, ID unik semua. 7.092 teks kembar adalah ulasan pendek dari pengguna
+berbeda ("mantap" 920×, "bagus" 864×), bukan duplikat scrape. Rentang waktu tidak sama per aplikasi
+(Gojek Jun–Okt, MyTelkomsel Sep–Okt 2026) karena diambil N ulasan terbaru.
 
 **Batasan:**
 - Kata kasar jarang muncul di Play Store (~18 dari 30 ribu ulasan, kemungkinan karena moderasi Google),
