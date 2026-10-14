@@ -7,7 +7,7 @@ import pytest
 
 from suaraulasan import export_web, train
 
-TEXTS = ["aplikasinya mantap, sangat membantu", "sering error, saldo nyangkut terus!!", "ok", "Gak bisa login udah 3 hari"]
+TEXTS = ["Bangsat!! aplikasi   goblok 😡", "a", "aplikasinya mantap, sangat membantu", "sering error, saldo nyangkut terus!!", "ok", "Gak bisa login udah 3 hari"]
 
 
 @pytest.mark.skipif(not shutil.which("node"), reason="butuh node")

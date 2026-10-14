@@ -10,10 +10,13 @@ import joblib
 
 
 def export(model) -> dict:
-    tfidf, clf = model.steps[0][1], model.steps[1][1]
-    coef = clf.coef_[0]
-    vocab = {t: [round(float(tfidf.idf_[i]), 4), round(float(coef[i]), 4)] for t, i in tfidf.vocabulary_.items()}
-    return {"vocab": vocab, "b": round(float(clf.intercept_[0]), 4)}
+    union, clf = model.steps[0][1], model.steps[1][1]
+    out, offset = {"b": round(float(clf.intercept_[0]), 4)}, 0
+    for name, tfidf in zip(["word", "char"], (t for _, t in union.transformer_list)):
+        coef = clf.coef_[0][offset : offset + len(tfidf.idf_)]
+        out[name] = {t: [round(float(tfidf.idf_[i]), 4), round(float(coef[i]), 4)] for t, i in tfidf.vocabulary_.items()}
+        offset += len(tfidf.idf_)
+    return out
 
 
 if __name__ == "__main__":
