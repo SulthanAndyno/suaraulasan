@@ -2,6 +2,8 @@
 
 Analisis sentimen ulasan Play Store aplikasi Indonesia (Gojek, BRImo, MyTelkomsel).
 
+**Demo:** https://sulthanandyno.github.io/suaraulasan/ (model jalan di browser, tanpa server)
+
 ```
 Play Store ──scrape.py──▶ SQLite ──train.py──▶ model.joblib ──api.py──▶ POST /predict
                                      │
@@ -26,20 +28,32 @@ emas gagal terus"): model menebak benar, labelnya yang salah.
 
 **Gold set (label manual, 300 ulasan dari test split, 25 di-skip, `data/gold.csv`):**
 
-| | vs gold |
-|---|---|
-| Label bintang benar | 96.4% (F1 0.963) |
-| TF-IDF + LogReg | F1 0.971 |
+| | Data latih | vs gold (F1) |
+|---|---|---|
+| Label bintang apa adanya | | 0.963 (96.4% benar) |
+| TF-IDF kata + LogReg | 2.858 ulasan | 0.963 |
+| TF-IDF kata + LogReg | 28.650 ulasan | 0.963 |
+| TF-IDF kata **+ karakter** + LogReg | 28.650 ulasan | **0.971** |
 
-Noise label bintang ternyata hanya ~3.6%, dan baseline sudah lebih akurat dari label yang dipakai
-melatihnya. Relabel penuh dengan LLM paling banyak menutup selisih kecil itu.
+Ulasan gold dibuang dari data latih (termasuk duplikat teks pendek seperti "baik"), jadi angka di
+atas jujur. Noise label bintang hanya ~3.6%; relabel penuh dengan LLM paling banyak menutup selisih kecil itu.
+
+**Data 10× saja tidak menaikkan F1.** Yang menolong adalah n-gram karakter (`char_wb` 2–5): tahan typo
+dan singkatan ("anjg", "gblk", "bgst lemot" → negatif).
+
+**Batasan:**
+- Kata kasar jarang muncul di Play Store (~18 dari 30 ribu ulasan, kemungkinan karena moderasi Google),
+  jadi kata kasar *tanpa konteks* ("bangsat") masih bisa salah. Dalam kalimat ("aplikasi goblok") sudah benar.
+- TF-IDF tidak paham "tapi": "bagus tapi sering lemot" masih condong positif.
+- Demo menampilkan "ragu" di bawah 60% dan "tidak dikenal" bila tak ada kata yang dikenali model.
 
 ## Jalankan
 
 ```bash
 uv sync
-uv run python -m suaraulasan.scrape --n 1000          # tambah data ke data/reviews.db
-uv run python -m suaraulasan.train                    # atau --data data/sample.csv
+uv run python -m suaraulasan.scrape --n 10000 --export data/reviews.csv   # ~30 ribu ulasan
+uv run python -m suaraulasan.train --data data/reviews.csv   # sample.csv: subset kecil untuk CI
+uv run python -m suaraulasan.export_web                       # perbarui docs/model.json untuk demo
 uv run uvicorn suaraulasan.api:app --reload
 curl -X POST localhost:8000/predict -H 'content-type: application/json' \
      -d '{"text": "aplikasi sering error, saldo nyangkut"}'
