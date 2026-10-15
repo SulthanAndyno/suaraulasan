@@ -32,8 +32,9 @@ jobs:
           git diff --cached --quiet && { echo "tidak ada perubahan"; exit 0; }
           git commit -m "chore(retrain): data $(date +%F), gold $(tr -d '\n ' < docs/metrics.json)"
           git push
-          # push dari GITHUB_TOKEN tidak memicu build Pages otomatis
-          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null
+          # push dari GITHUB_TOKEN tidak memicu build Pages otomatis; Pages mati tidak boleh menggagalkan retrain
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null \
+            || echo "::warning::build GitHub Pages gagal dipicu (Pages belum aktif?)"
         env:
           GH_TOKEN: ${{ github.token }}
       - run: cat docs/metrics.json >> "$GITHUB_STEP_SUMMARY"
