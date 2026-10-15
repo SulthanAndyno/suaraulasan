@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import os
 import sqlite3
 
 from google_play_scraper import Sort, reviews
@@ -35,6 +36,17 @@ def save(db: str, app: str, rows: list[dict]) -> int:
     return added
 
 
+def import_csv(db: str, path: str) -> None:
+    """Isi SQLite dari CSV yang sudah di-commit (di CI belum ada .db), supaya ekspor tidak menghapus data lama."""
+    con = sqlite3.connect(db)
+    con.execute(SCHEMA)
+    with open(path, encoding="utf-8") as f:
+        rows = [(r["id"], r["app"], r["content"], int(r["score"]), r["at"]) for r in csv.DictReader(f)]
+    con.executemany("INSERT OR IGNORE INTO reviews VALUES (?, ?, ?, ?, ?)", rows)
+    con.commit()
+    con.close()
+
+
 def export_csv(db: str, path: str) -> None:
     con = sqlite3.connect(db)
     with open(path, "w", newline="", encoding="utf-8") as f:
@@ -50,6 +62,8 @@ if __name__ == "__main__":
     p.add_argument("--db", default="data/reviews.db")
     p.add_argument("--export", help="sekalian ekspor seluruh tabel ke CSV ini")
     a = p.parse_args()
+    if a.export and os.path.exists(a.export):
+        import_csv(a.db, a.export)
     for app, app_id in APPS.items():
         print(f"{app}: +{save(a.db, app, fetch(app_id, a.n))} ulasan baru")
     if a.export:
