@@ -65,9 +65,20 @@ positif, 83 skip (tetap label bintang).
 | aplikasinya bagus, cuma kadang error | positif 90% | **negatif 93%** |
 | mantap, sangat membantu | positif 100% | positif 100% |
 
-Di gold set: salah 8 vs 9 dari 275, kasus "bagus tapi" benar 6/9 vs 7/9. **Gold 275 ulasan terlalu kecil
-untuk membedakan keduanya**; kasus sulitnya cuma 9. Model baru dipakai karena perilakunya sesuai definisi
-label. Langkah berikut: perbesar gold khusus kasus sulit.
+**Gold kasus sulit (100 ulasan bintang 4–5 berkata keluhan, label manual, 10 skip):** gold acak saja
+terlalu kecil (cuma 9 kasus sulit), jadi ditambah 100 ulasan khusus. Labeling pertama tidak konsisten
+dengan aturan tertulis (campuran pujian+keluhan dicap positif, 51 skip), jadi aturan ditegaskan
+("ada keluhan = negatif") lalu dilabel ulang.
+
+| F1 | Gold acak (275) | Gold sulit (90) |
+|---|---|---|
+| Label bintang apa adanya | 0.963 | 0.204 |
+| Model, label bintang | 0.967 | 0.690 |
+| Model, label bintang + LLM | 0.967 | **0.771** |
+
+Label LLM sama dengan label manual di 78/90 kasus sulit (bintang: 23/90). Relabel tidak merusak kasus
+biasa dan menaikkan kasus sulit +0.08. Gold acak dan sulit dilaporkan terpisah karena gold sulit sengaja
+tidak representatif.
 
 **Catatan data:** 30.013 ulasan, ID unik semua. 7.092 teks kembar adalah ulasan pendek dari pengguna
 berbeda ("mantap" 920×, "bagus" 864×), bukan duplikat scrape. Rentang waktu tidak sama per aplikasi
