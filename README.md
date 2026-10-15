@@ -8,7 +8,11 @@ Analisis sentimen ulasan Play Store aplikasi Indonesia (Gojek, BRImo, MyTelkomse
 Play Store ──scrape.py──▶ SQLite ──train.py──▶ model.joblib ──api.py──▶ POST /predict
                                      │
                          CI: lint → test → train + gate F1 → Docker → GHCR
+                         Senin (retrain.yml): scrape → train → gate gold set → data + demo
 ```
+
+Gate gold (`docs/metrics.json`): model mingguan ditolak bila F1 gold acak **atau** gold kasus sulit turun
+lebih dari 0.01 dari model sebelumnya.
 
 ## Baseline (fase 1)
 

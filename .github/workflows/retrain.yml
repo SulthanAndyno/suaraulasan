@@ -1,0 +1,39 @@
+name: retrain
+
+# Tiap Senin 08:00 WIB: scrape ulasan baru -> latih ulang -> gate gold set -> perbarui data & demo.
+# Label LLM (data/llm_labels.csv) tidak diperbarui di sini karena Ollama butuh GPU; jalankan relabel.py lokal.
+on:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - name: Scrape
+        run: uv run python -m suaraulasan.scrape --n 1000 --export data/reviews.csv
+      - name: Train + gate test split
+        run: uv run python -m suaraulasan.train --data data/reviews.csv --min-f1 0.88
+      - name: Gate gold set
+        run: uv run python -m suaraulasan.label --gate
+      - run: uv run python -m suaraulasan.export_web
+      - name: Commit data + demo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/reviews.csv docs/model.json docs/metrics.json
+          git diff --cached --quiet && { echo "tidak ada perubahan"; exit 0; }
+          git commit -m "chore(retrain): data $(date +%F), gold $(tr -d '\n ' < docs/metrics.json)"
+          git push
+          # push dari GITHUB_TOKEN tidak memicu build Pages otomatis
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: cat docs/metrics.json >> "$GITHUB_STEP_SUMMARY"
