@@ -25,6 +25,8 @@
   .bar { height: 6px; margin: 8px 0 16px; background: var(--line); border-radius: 3px; overflow: hidden; }
   .bar div { height: 100%; }
   .terms span { display: inline-block; margin: 0 6px 6px 0; padding: 2px 8px; font-size: 14px; border-radius: 4px; border: 1px solid; }
+  .terms span.meta { border-style: dashed; font-style: italic; }
+  #hint { margin-top: 8px; font-size: 14px; }
   footer { margin-top: 32px; font-size: 14px; color: var(--muted); }
   a { color: inherit; }
 </style>
@@ -42,8 +44,10 @@
   <div id="out" hidden>
     <div id="label"></div>
     <div class="bar"><div id="fill"></div></div>
-    <p>Kata yang paling berpengaruh:</p>
+    <p>Yang mendorong tebakan (hijau = positif, merah = negatif):</p>
     <div class="terms" id="terms"></div>
+    <p id="hint" hidden>Teks sangat pendek: kecenderungan bawaan model ke positif bisa mengalahkan sinyal katanya,
+      karena kebanyakan ulasan pendek di data bernada positif ("mantap", "ok"). Coba tulis kalimat lengkap.</p>
   </div>
   <footer>Dilatih dari ulasan Play Store Gojek, BRImo, dan MyTelkomsel. F1 0.971 pada gold set berlabel manual.
     <a href="https://github.com/SulthanAndyno/suaraulasan">Kode di GitHub</a></footer>
@@ -64,14 +68,19 @@
     $("label").textContent = !r.terms.length ? "tidak dikenal" : unsure ? `ragu, condong ${r.label} · ${(conf * 100).toFixed(0)}%` : `${r.label} · ${(conf * 100).toFixed(0)}%`;
     $("label").style.color = unsure ? "var(--muted)" : color;
     $("fill").style.cssText = `width:${conf * 100}%;background:${color}`;
+    // skor = bawaan model + kata + pola huruf; ketiganya ditampilkan supaya penjelasan cocok dengan tebakan
+    const words = r.terms.reduce((s, [, c]) => s + c, 0);
+    const meta = [["pola huruf", r.score - model.b - words], ["bawaan model", model.b]];
     const top = r.terms.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
-    $("terms").replaceChildren(...top.map(([g, c]) => {
+    $("terms").replaceChildren(...[...top, ...meta].map(([g, c], i) => {
       const s = document.createElement("span");
       s.textContent = g;
+      s.className = i >= top.length ? "meta" : "";
       s.style.color = c > 0 ? "var(--pos)" : "var(--neg)";
       return s;
     }));
-    if (!top.length) $("terms").textContent = "(tidak ada kata yang dikenal model; coba kalimat yang lebih panjang)";
+    if (!top.length) $("terms").prepend("(tidak ada kata yang dikenal model) ");
+    $("hint").hidden = !(unsure && r.label === "positif" && words + meta[0][1] < 0);
   }
   $("text").addEventListener("input", run);
   document.querySelectorAll(".ex button").forEach((b) => b.onclick = () => { $("text").value = b.textContent; run(); });
