@@ -9,8 +9,10 @@ Tombol: n = negatif, p = positif, s = skip (ambigu / bukan opini), b = batal ter
 
 import argparse
 import csv
+import json
 import os
 import random
+from pathlib import Path
 
 from sklearn.metrics import f1_score
 
@@ -84,6 +86,32 @@ def predict(model_path: str, texts: list[str]) -> list[int]:
     return [LABELS.index(r["label"]) for r in clf(texts, batch_size=32)]
 
 
+def gold_scores(model_path: str) -> dict[str, float]:
+    """F1 di gold acak (300 pertama) dan gold kasus sulit (--hard, idx kosong), dilaporkan terpisah."""
+    rows = [r for r in read_gold() if r["gold"] != ""]
+    out = {}
+    for part, sub in [("acak", [r for r in rows if r["idx"] != ""]), ("sulit", [r for r in rows if r["idx"] == ""])]:
+        pred = predict(model_path, [r["content"] for r in sub])
+        out[part] = round(f1_score([int(r["gold"]) for r in sub], pred, average="macro"), 4)
+    return out
+
+
+def passes(new: dict[str, float], old: dict[str, float], tol: float = 0.01) -> bool:
+    # ponytail: toleransi 0.01 menyerap noise gold kecil (~3 ulasan); uji statistik kalau gold membesar
+    return all(new[k] >= old.get(k, 0) - tol for k in new)
+
+
+def gate(model_path: str, path: str = "docs/metrics.json") -> None:
+    """Gate CI: tolak model baru kalau F1 gold turun; kalau lolos, simpan skor barunya."""
+    old = json.loads(Path(path).read_text()) if os.path.exists(path) else {}
+    new = gold_scores(model_path)
+    print(f"gold lama {old} -> baru {new}")
+    if not passes(new, old):
+        raise SystemExit("GAGAL gate gold: model baru lebih buruk, tidak dipakai")
+    with open(path, "w") as f:
+        json.dump(new, f, indent=2)
+
+
 def evaluate(models: list[str]) -> None:
     rows = [r for r in read_gold() if r["gold"] != ""]
     gold = [int(r["gold"]) for r in rows]
@@ -108,7 +136,13 @@ if __name__ == "__main__":
     p.add_argument("--data", default="data/sample.csv")
     p.add_argument("--n", type=int, default=300)
     p.add_argument("--eval", action="store_true")
+    p.add_argument("--gate", action="store_true", help="gate CI untuk models/model.joblib")
     p.add_argument("--hard", action="store_true", help="hanya kasus sulit; pakai --data data/reviews.csv")
     p.add_argument("--models", nargs="*", default=["models/model.joblib", "models/indobert"])
     a = p.parse_args()
-    evaluate(a.models) if a.eval else annotate(a.data, a.n, a.hard)
+    if a.gate:
+        gate("models/model.joblib")
+    elif a.eval:
+        evaluate(a.models)
+    else:
+        annotate(a.data, a.n, a.hard)

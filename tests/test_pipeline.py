@@ -41,3 +41,12 @@ def test_llm_labels_override(tmp_path, monkeypatch):
     assert train.load("d.csv") == [("bagus tapi lemot", 1), ("mantap", 1)]
     (tmp_path / "data/llm_labels.csv").write_text("content,label\nbagus tapi lemot,negatif\nmantap,skip\n")
     assert train.load("d.csv") == [("bagus tapi lemot", 0), ("mantap", 1)]
+
+
+def test_gold_gate():
+    from suaraulasan.label import passes
+
+    old = {"acak": 0.967, "sulit": 0.771}
+    assert passes({"acak": 0.96, "sulit": 0.80}, old)
+    assert not passes({"acak": 0.967, "sulit": 0.75}, old)
+    assert passes(old, {})
