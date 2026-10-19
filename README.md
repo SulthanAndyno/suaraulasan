@@ -135,8 +135,9 @@ Push ke `main` membangun image Docker ke `ghcr.io/sulthanandyno/suaraulasan`.
 **Retrain** (`retrain.yml`, tiap Senin 08.00 WIB atau manual dari tab Actions):
 1. Scrape ±1.000 ulasan terbaru per aplikasi, digabung ke `data/reviews.csv`.
 2. Latih ulang, gate F1 test split ≥ 0.88.
-3. **Gate gold:** model ditolak bila F1 gold acak **atau** gold sulit turun lebih dari 0.01 dari
-   `docs/metrics.json`.
+3. **Gate gold:** model ditolak bila F1 gold acak **atau** gold sulit turun lebih dari setara ~3 ulasan
+   (3/275 ≈ 0.011 dan 3/90 ≈ 0.033) dari `docs/metrics.json`. Toleransi awal 0.01 terlalu ketat untuk
+   gold sulit (1 ulasan ≈ 0.011) dan sempat menolak model yang setara pada 19 Okt 2026.
 4. Bila lolos: commit data, model demo, dan skor baru, lalu picu build GitHub Pages.
 
 Label LLM tidak diperbarui di pipeline karena Ollama butuh GPU; `relabel.py` dijalankan lokal sesekali.
@@ -145,7 +146,7 @@ Label LLM tidak diperbarui di pipeline karena Ollama butuh GPU; `relabel.py` dij
 
 - Kata kasar jarang ada di Play Store (~18 dari 30 ribu ulasan, kemungkinan karena moderasi Google), jadi
   kata kasar **tanpa konteks** ("bangsat") masih bisa salah. Dalam kalimat ("aplikasi goblok") sudah benar.
-- Gold set kecil: selisih di bawah ~0.01 F1 setara 2–3 ulasan dan belum tentu bermakna.
+- Gold set kecil: selisih 1–3 ulasan (≈0.01 di gold acak, ≈0.03 di gold sulit) belum tentu bermakna.
 - Ulasan baru dari pipeline mingguan hanya memakai label bintang sampai `relabel.py` dijalankan lagi.
 - Demo menampilkan "ragu" di bawah 60% dan "tidak dikenal" bila tak ada kata yang dikenali model.
 

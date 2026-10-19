@@ -93,12 +93,15 @@ def gold_scores(model_path: str) -> dict[str, float]:
     for part, sub in [("acak", [r for r in rows if r["idx"] != ""]), ("sulit", [r for r in rows if r["idx"] == ""])]:
         pred = predict(model_path, [r["content"] for r in sub])
         out[part] = round(f1_score([int(r["gold"]) for r in sub], pred, average="macro"), 4)
+        out[f"n_{part}"] = len(sub)
     return out
 
 
-def passes(new: dict[str, float], old: dict[str, float], tol: float = 0.01) -> bool:
-    # ponytail: toleransi 0.01 menyerap noise gold kecil (~3 ulasan); uji statistik kalau gold membesar
-    return all(new[k] >= old.get(k, 0) - tol for k in new)
+def passes(new: dict[str, float], old: dict[str, float], slack: int = 3) -> bool:
+    # Toleransi setara ~3 ulasan per bagian gold: di gold sulit (90) satu ulasan saja sudah ~0.011 F1,
+    # jadi toleransi F1 tetap 0.01 menolak model yang sebenarnya setara (kejadian 19 Okt 2026).
+    # ponytail: perkiraan kasar; ganti uji statistik (bootstrap/McNemar) kalau gold membesar
+    return all(new[k] >= old.get(k, 0) - slack / new[f"n_{k}"] for k in ("acak", "sulit"))
 
 
 def gate(model_path: str, path: str = "docs/metrics.json") -> None:

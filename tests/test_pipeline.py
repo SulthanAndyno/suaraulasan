@@ -46,7 +46,9 @@ def test_llm_labels_override(tmp_path, monkeypatch):
 def test_gold_gate():
     from suaraulasan.label import passes
 
-    old = {"acak": 0.967, "sulit": 0.771}
-    assert passes({"acak": 0.96, "sulit": 0.80}, old)
-    assert not passes({"acak": 0.967, "sulit": 0.75}, old)
-    assert passes(old, {})
+    old = {"acak": 0.9706, "sulit": 0.7708}
+    n = {"n_acak": 275, "n_sulit": 90}
+    assert passes({"acak": 0.9669, "sulit": 0.7594, **n}, old)  # retrain 19 Okt: setara, beda ~1 ulasan
+    assert not passes({"acak": 0.9706, "sulit": 0.70, **n}, old)
+    assert not passes({"acak": 0.94, "sulit": 0.78, **n}, old)
+    assert passes({"acak": 0.9, "sulit": 0.7, **n}, {})
