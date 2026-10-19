@@ -104,13 +104,20 @@ def passes(new: dict[str, float], old: dict[str, float], slack: int = 3) -> bool
     return all(new[k] >= old.get(k, 0) - slack / new[f"n_{k}"] for k in ("acak", "sulit"))
 
 
+# Batas bawah tetap: model 15 Okt 2026 yang diperiksa manual. Mencegah skor turun pelan-pelan
+# karena patokan mingguan ikut turun tiap kali lolos. Ubah hanya kalau sengaja mengganti model.
+FLOOR = {"acak": 0.9706, "sulit": 0.7708}
+
+
 def gate(model_path: str, path: str = "docs/metrics.json") -> None:
-    """Gate CI: tolak model baru kalau F1 gold turun; kalau lolos, simpan skor barunya."""
+    """Gate CI: tolak model baru kalau F1 gold turun dari minggu lalu atau dari FLOOR; kalau lolos, simpan skornya."""
     old = json.loads(Path(path).read_text()) if os.path.exists(path) else {}
     new = gold_scores(model_path)
-    print(f"gold lama {old} -> baru {new}")
+    print(f"gold lama {old} | batas bawah {FLOOR} -> baru {new}")
     if not passes(new, old):
-        raise SystemExit("GAGAL gate gold: model baru lebih buruk, tidak dipakai")
+        raise SystemExit("GAGAL gate gold: lebih buruk dari model minggu lalu, tidak dipakai")
+    if not passes(new, FLOOR):
+        raise SystemExit("GAGAL gate gold: di bawah batas bawah (FLOOR), tidak dipakai")
     with open(path, "w") as f:
         json.dump(new, f, indent=2)
 

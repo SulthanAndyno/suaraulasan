@@ -52,3 +52,14 @@ def test_gold_gate():
     assert not passes({"acak": 0.9706, "sulit": 0.70, **n}, old)
     assert not passes({"acak": 0.94, "sulit": 0.78, **n}, old)
     assert passes({"acak": 0.9, "sulit": 0.7, **n}, {})
+
+
+def test_gold_floor_stops_drift():
+    from suaraulasan.label import FLOOR, passes
+
+    n = {"n_acak": 275, "n_sulit": 90}
+    last_week = {"acak": 0.965, "sulit": 0.75}  # patokan sudah turun pelan-pelan
+    new = {"acak": 0.963, "sulit": 0.73, **n}
+    assert passes(new, last_week)  # turun kecil dari minggu lalu: lolos
+    assert not passes(new, FLOOR)  # tapi total turunnya dari model 15 Okt terlalu jauh
+    assert passes({"acak": 0.9669, "sulit": 0.7594, **n}, FLOOR)  # model 19 Okt tetap lolos
