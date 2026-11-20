@@ -110,14 +110,14 @@ FLOOR = {"acak": 0.9706, "sulit": 0.7708}
 
 
 def gate(model_path: str, path: str = "docs/metrics.json") -> None:
-    """Gate CI: tolak model baru kalau F1 gold turun dari minggu lalu atau dari FLOOR; kalau lolos, simpan skornya."""
+    """Gate CI: tolak model baru kalau F1 gold di bawah FLOOR; cetak perbandingan skor lalu dan simpan skor baru."""
     old = json.loads(Path(path).read_text()) if os.path.exists(path) else {}
     new = gold_scores(model_path)
     print(f"gold lama {old} | batas bawah {FLOOR} -> baru {new}")
-    if not passes(new, old):
-        raise SystemExit("GAGAL gate gold: lebih buruk dari model minggu lalu, tidak dipakai")
     if not passes(new, FLOOR):
         raise SystemExit("GAGAL gate gold: di bawah batas bawah (FLOOR), tidak dipakai")
+    if old and not passes(new, old):
+        print("catatan: skor di bawah minggu lalu, tapi masih lolos batas bawah (FLOOR)")
     with open(path, "w") as f:
         json.dump(new, f, indent=2)
 

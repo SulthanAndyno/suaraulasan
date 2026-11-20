@@ -1,7 +1,9 @@
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
-from suaraulasan import api, train
+from suaraulasan import api, label, train
 
 SAMPLE = "data/sample.csv"
 
@@ -63,3 +65,19 @@ def test_gold_floor_stops_drift():
     assert passes(new, last_week)  # turun kecil dari minggu lalu: lolos
     assert not passes(new, FLOOR)  # tapi total turunnya dari model 15 Okt terlalu jauh
     assert passes({"acak": 0.9669, "sulit": 0.7594, **n}, FLOOR)  # model 19 Okt tetap lolos
+
+
+def test_gold_gate_uses_floor_not_spike(tmp_path, monkeypatch):
+    metrics_file = tmp_path / "metrics.json"
+    metrics_file.write_text(json.dumps({"acak": 0.9779, "n_acak": 275, "sulit": 0.8011, "n_sulit": 90}))
+
+    # Skor normal yang lolos FLOOR tetap diterima walau di bawah spike minggu lalu
+    monkeypatch.setattr(label, "gold_scores", lambda _: {"acak": 0.9779, "n_acak": 275, "sulit": 0.7631, "n_sulit": 90})
+    label.gate("unused.joblib", str(metrics_file))
+    assert json.loads(metrics_file.read_text())["sulit"] == 0.7631
+
+    # Skor di bawah FLOOR tetap ditolak tanpa menimpa metrics.json
+    monkeypatch.setattr(label, "gold_scores", lambda _: {"acak": 0.9779, "n_acak": 275, "sulit": 0.72, "n_sulit": 90})
+    with pytest.raises(SystemExit, match="FLOOR"):
+        label.gate("unused.joblib", str(metrics_file))
+    assert json.loads(metrics_file.read_text())["sulit"] == 0.7631
