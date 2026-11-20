@@ -136,11 +136,11 @@ Push ke `main` membangun image Docker ke `ghcr.io/sulthanandyno/suaraulasan`.
 1. Scrape ±1.000 ulasan terbaru per aplikasi, digabung ke `data/reviews.csv`.
 2. Latih ulang, gate F1 test split ≥ 0.88.
 3. **Gate gold:** model ditolak bila F1 gold acak **atau** gold sulit turun lebih dari setara ~3 ulasan
-   (3/275 ≈ 0.011 dan 3/90 ≈ 0.033) dari `docs/metrics.json`. Toleransi awal 0.01 terlalu ketat untuk
-   gold sulit (1 ulasan ≈ 0.011) dan sempat menolak model yang setara pada 19 Okt 2026.
-   Selain dibanding minggu lalu, model juga dibanding **batas bawah tetap** (`FLOOR` di `label.py`, model
-   15 Okt 2026 yang diperiksa manual) dengan toleransi yang sama, supaya skor tidak turun pelan-pelan
-   minggu demi minggu.
+   (3/275 ≈ 0.011 dan 3/90 ≈ 0.033) dari **batas bawah tetap** (`FLOOR` di `label.py`, model 15 Okt
+   2026 yang diperiksa manual). Toleransi awal 0.01 terlalu ketat untuk gold sulit (1 ulasan ≈ 0.011)
+   dan sempat menolak model yang setara pada 19 Okt 2026; sementara membandingkan wajib ke
+   `docs/metrics.json` minggu lalu sempat menjebak gate di rekor lonjakan sesaat (2 Nov 2026,
+   0.8011), sehingga `docs/metrics.json` kini dipakai sebagai catatan skor terakhir saja.
 4. Bila lolos: commit data, model demo, dan skor baru, lalu picu build GitHub Pages.
 
 Label LLM tidak diperbarui di pipeline karena Ollama butuh GPU; `relabel.py` dijalankan lokal sesekali.
